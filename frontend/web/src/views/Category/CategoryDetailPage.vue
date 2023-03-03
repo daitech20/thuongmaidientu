@@ -1,0 +1,118 @@
+<template>
+    <a-layout v-if="isLoggedIn" style="min-height: 100vh">
+		<DashBoardSlibar :user="user" />
+		<a-layout>
+			<DashBoardHeader/>
+            <a-layout>
+                <a-page-header
+                style="border: 1px solid rgb(235, 237, 240)"
+                title="Chi tiết category"
+                sub-title="" />
+                <a-layout-content style="padding: 0 50px">
+                    <a-form
+                        :model="category"
+                        name="nest-messages"
+                        :label-col="{ span: 4 }"
+                        :wrapper-col="{ span: 16 }"
+                        @finish="onFinish"
+                    >
+                        <a-form-item
+                            :name="['name']"
+                            label="Tên sản phẩm"
+                            :rules="[{ required: true, message: 'Vui lòng nhập tên category!' }]"
+                            :validateStatus="errors.name ? 'error': ''"
+                        >
+                            <a-input v-model:value="category.name" />
+                            <a-typography-text v-if="errors.name" type="danger">
+                                {{errors.name[0]}}
+                            </a-typography-text>
+                        </a-form-item>
+                        
+                        <a-form-item
+                            :name="['description']"
+                            label="Mô tả"
+                            :rules="[{ required: true, message: 'Vui lòng nhập mô tả!' }]"
+                        >
+                            <a-input v-model:value="category.description" />
+                        </a-form-item>
+
+                        <a-form-item :wrapper-col="{ offset: 8, span: 16 }">
+                            <a-button type="primary" html-type="submit" >Cập nhật</a-button>
+                        </a-form-item>
+                    </a-form>
+                </a-layout-content>
+            </a-layout>
+            <DashBoardFooter/>
+		</a-layout>
+	</a-layout>
+</template>
+
+<script lang="ts">
+import BaseRequest from '../../core/BaseRequest.js'
+import { notification } from 'ant-design-vue';
+import { defineComponent, ref } from 'vue';
+import type { UploadProps, UploadChangeParam } from 'ant-design-vue';
+import { UploadOutlined } from '@ant-design/icons-vue';
+import DashBoardSlibar from '../../components/DashBoardSlibar.vue'
+import DashBoardHeader from '../../components/DashBoardHeader.vue'
+import DashBoardFooter from '../../components/DashBoardFooter.vue'
+import { authStore } from '../../store/auth.store';
+import { mapState } from 'pinia';
+
+export default({
+    data() {
+        return {
+            category: {
+                name: '',
+                description: '',
+            },
+            errors: {},
+        }
+    },
+    mounted() {
+        this.getData()
+    },
+    computed: {
+		...mapState(authStore, ['isLoggedIn', 'user'])
+	},
+    methods: {
+        getData: function() {
+            BaseRequest.get('products/category/' + this.$route.params.category_id)
+			.then(response => {
+				this.category.name = response.data.name
+                this.category.description = response.data.description
+			})
+			.catch(error=> {
+				this.errors = error.response.data
+			});
+        },
+        onFinish: function() {
+            BaseRequest.put('products/category/' + this.$route.params.category_id, {
+                name: this.category.name,
+                description: this.category.description,
+            })
+            .then(response => {
+                    this.errors = {}
+                    this.updateSuccessNotification()
+                    this.$router.push({ name: 'category.list'});
+                }
+            )
+            .catch(error=> {
+                this.errors = error.response.data
+                console.log(this.errors)
+            });
+        },
+        updateSuccessNotification: function() {
+            notification['success']({
+                message: 'Update successfully!',
+                description:
+                'Category was updated! ',
+            });
+        }
+    },
+    components: {
+        DashBoardSlibar, DashBoardHeader, DashBoardFooter, UploadOutlined
+    },
+})
+</script>
+1
